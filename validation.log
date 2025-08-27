@@ -1,0 +1,21 @@
+[info] Activation of plug-in Edgar Renderer successful, version 3.25.2.
+[EFM.5.02.01.01] Disallowed character '^' (U+005E) in file aapl-20240629.htm at line 97 col 51
+[info] loaded in 0.02 secs at 2025-08-27T19:01:21
+[info:profileActivity] validating US SEC (Edgar Filing Manual, Strict) filing rules 0.000 secs
+
+[info] validated in 0.12 secs
+[warn] The rendering engine was unable to produce output due to an internal error.  This is not considered an error in the filing.
+[info] Activation of plug-in Edgar Renderer successful, version 3.25.2.
+[EFM.5.02.01.01] Disallowed character '^' (U+005E) in file aapl-20240629.htm at line 97 col 51
+[info] loaded in 0.02 secs at 2025-08-27T19:36:27
+[info:profileActivity] validating US SEC (Edgar Filing Manual, Strict) filing rules 0.000 secs
+
+[info] validated in 0.30 secs
+[warn] The rendering engine was unable to produce output due to an internal error.  This is not considered an error in the filing.
+[info] Activation of plug-in Edgar Renderer successful, version 3.25.2.
+[EFM.5.02.01.01] Disallowed character '^' (U+005E) in file form10-q.htm at line 97 col 51
+[info] loaded in 0.02 secs at 2025-08-27T19:44:28
+[info:profileActivity] validating US SEC (Edgar Filing Manual, Strict) filing rules 0.000 secs
+
+[info] validated in 0.11 secs
+[warn] The rendering engine was unable to produce output due to an internal error.  This is not considered an error in the filing.
