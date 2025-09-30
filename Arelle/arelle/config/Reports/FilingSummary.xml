@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<FilingSummary>
+  <Version>3.25.2</Version>
+  <ProcessingTime/>
+  <ReportFormat>html</ReportFormat>
+  <ContextCount>0</ContextCount>
+  <ElementCount>0</ElementCount>
+  <EntityCount>0</EntityCount>
+  <FootnotesReported>false</FootnotesReported>
+  <SegmentCount>0</SegmentCount>
+  <ScenarioCount>0</ScenarioCount>
+  <TuplesReported>false</TuplesReported>
+  <UnitCount>0</UnitCount>
+  <MyReports>
+    <Report>
+      <IsDefault>false</IsDefault>
+      <HasEmbeddedReports>false</HasEmbeddedReports>
+      <LongName>All Reports</LongName>
+      <ReportType>Book</ReportType>
+      <ShortName>All Reports</ShortName>
+    </Report>
+  </MyReports>
+  <Logs>
+    <Log type="Error">[webCache:retrievalError] [Errno -5] No address associated with hostname 
+retrieving http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd</Log>
+    <Log type="Error">[FileNotLoadable] File can not be loaded: http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd - empty-instance.xml 4</Log>
+    <Log type="Error">[cp-0303-Valid-File-Extension] The document type and naming of "empty-instance.xml" naming is not consistent with one or more of the following:
+
+EX-101.INS - XBRL Instance document (Required) *.xml
+EX-101.SCH - XBRL Taxonomy Extension Schema document *.xsd
+EX-101.REF - XBRL Taxonomy Extension Reference Linkbase document *.xml
+EX-101.CAL - XBRL Taxonomy Extension Calculation Linkbase document *.xml
+EX-101.DEF - XBRL Taxonomy Extension Definition Linkbase document *.xml
+EX-101.LAB - XBRL Taxonomy Extension Labels Linkbase document *.xml
+EX-101.PRE - XBRL Taxonomy Extension Presentation Linkbase document *.xml
+
+Please ensure that you comply with the document type and naming provided.</Log>
+    <Log type="Error">[EFM.6.05.20.deiFactsMissing] DEI facts are missing. - empty-instance.xml </Log>
+    <Log type="Error">[cp-0519-Required-Context] Required context (no segment) not found for document type (none).</Log>
+    <Log type="Error">[EFM.6.10.01.missingLabelLinkbase] A label linkbase is required but was not found - empty-instance.xml </Log>
+  </Logs>
+  <InputFiles>
+    <File doctype="" isOnlyDei="true">empty-instance.xml</File>
+  </InputFiles>
+  <SupplementalFiles/>
+  <BaseTaxonomies/>
+  <HasPresentationLinkbase>false</HasPresentationLinkbase>
+  <HasCalculationLinkbase>false</HasCalculationLinkbase>
+</FilingSummary>
