@@ -40,7 +40,6 @@ validation.log
 # External plugins (cloned from GitHub)
 Arelle/arelle/plugin/EDGAR/
 Arelle/arelle/plugin/xule/
-Arelle/arelle/plugin/validate/DQC.py
 
 # OS
 .DS_Store
