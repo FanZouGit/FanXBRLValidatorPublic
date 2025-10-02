@@ -44,3 +44,9 @@ Arelle/arelle/plugin/xule/
 # OS
 .DS_Store
 Thumbs.db
+
+# AWS Lambda testing
+response.json
+*.zip
+load-test.yml
+test_lambda.sh
