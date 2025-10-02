@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docs and tests
+Arelle/docs/
+Arelle/tests/
+Arelle/.github/
+*.md
+!README.md
+!AWS_LAMBDA_DEPLOYMENT.md
+
+# Build artifacts
+Arelle/dist/
+Arelle/build/
+
+# Reports
+Reports/
+*.log
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+Dockerfile.*
+!Dockerfile.lambda
+docker-compose*.yml
+
+# CI/CD
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+
+# Existing plugins (will be cloned fresh)
+Arelle/arelle/plugin/EDGAR/
+Arelle/arelle/plugin/xule/

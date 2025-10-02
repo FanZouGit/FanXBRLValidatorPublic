@@ -1,0 +1,70 @@
+# AWS Lambda Python runtime base image
+FROM public.ecr.aws/lambda/python:3.11
+
+# Install system dependencies required by Arelle
+RUN yum update -y && \
+    yum install -y \
+    gcc \
+    gcc-c++ \
+    unixODBC-devel \
+    libxml2-devel \
+    libxslt-devel \
+    git \
+    && yum clean all
+
+# Set working directory to Lambda task root
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Copy Arelle requirements and install dependencies
+COPY Arelle/requirements.txt ./arelle-requirements.txt
+
+# Install only the core dependencies needed for validation (not dev/build/docs)
+# We'll create a minimal requirements file for Lambda
+RUN pip install --no-cache-dir \
+    bottle==0.13.4 \
+    certifi \
+    cheroot==10.0.1 \
+    filelock==3.19.1 \
+    isodate==0.7.2 \
+    jsonschema==4.25.1 \
+    lxml==6.0.1 \
+    numpy \
+    openpyxl==3.1.5 \
+    pycountry==24.6.1 \
+    pyparsing==3.2.3 \
+    python-dateutil==2.9.0.post0 \
+    regex \
+    tornado==6.5.2 \
+    typing-extensions==4.15.0 \
+    pycryptodome==3.23.0 \
+    rdflib==7.1.4 \
+    graphviz==0.21 \
+    pillow==11.3.0 \
+    tinycss2==1.4.0 \
+    requests==2.32.5
+
+# Copy the Arelle application
+COPY Arelle/arelleCmdLine.py ${LAMBDA_TASK_ROOT}/Arelle/
+COPY Arelle/arelle ${LAMBDA_TASK_ROOT}/Arelle/arelle/
+
+# Copy the main validation script
+COPY validate_filing.py ${LAMBDA_TASK_ROOT}/
+
+# Copy the Lambda handler
+COPY lambda_handler.py ${LAMBDA_TASK_ROOT}/
+
+# Clone EDGAR and xule plugins at build time
+RUN cd ${LAMBDA_TASK_ROOT}/Arelle/arelle && \
+    mkdir -p plugin && \
+    cd plugin && \
+    git clone --depth 1 https://github.com/Arelle/EDGAR.git && \
+    git clone --depth 1 https://github.com/xbrlus/xule.git && \
+    if [ -d "xule/plugin/xule" ]; then \
+        mv xule/plugin/xule ./xule_temp && \
+        rm -rf xule && \
+        mv xule_temp xule; \
+    fi && \
+    echo "Plugins installed successfully"
+
+# Set the Lambda handler
+CMD ["lambda_handler.lambda_handler"]

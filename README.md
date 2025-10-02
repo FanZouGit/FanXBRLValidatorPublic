@@ -2,6 +2,8 @@
 
 A Python application to validate EDGAR XBRL and iXBRL filings using Arelle as the core validation engine with comprehensive rule sets.
 
+**Now with AWS Lambda support!** Deploy as a serverless function for on-demand validation. See [AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md) for details.
+
 ## Overview
 
 This validation application implements a comprehensive workflow for validating SEC XBRL filings:
@@ -74,7 +76,9 @@ This validation application implements a comprehensive workflow for validating S
 
 ## Usage
 
-### Basic Validation
+### Local Validation
+
+#### Basic Validation
 
 Validate an XBRL filing with full DQC rules (default):
 
@@ -87,13 +91,26 @@ Example:
 python validate_filing.py https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/aapl-20240629.htm
 ```
 
-### Validation Without DQC Rules
+#### Validation Without DQC Rules
 
 If you want to run only basic EFM validation without the comprehensive DQCRT rules:
 
 ```bash
 python validate_filing.py <FILING_URL_OR_PATH> --no-dqc
 ```
+
+### AWS Lambda Deployment
+
+Deploy the validator as a serverless AWS Lambda function for on-demand, scalable validation:
+
+```bash
+# Build and deploy to AWS Lambda
+docker build -f Dockerfile.lambda -t xbrl-validator:latest .
+# Push to ECR and create Lambda function
+# See AWS_LAMBDA_DEPLOYMENT.md for complete instructions
+```
+
+For complete AWS Lambda deployment instructions, see **[AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md)**.
 
 ### Command Line Options
 

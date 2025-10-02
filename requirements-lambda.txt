@@ -1,0 +1,34 @@
+# AWS Lambda Requirements
+# Minimal set of dependencies for XBRL validation in Lambda
+
+# Core Arelle dependencies
+bottle==0.13.4
+certifi==2025.8.3
+cheroot==10.0.1
+filelock==3.19.1
+isodate==0.7.2
+jsonschema==4.25.1
+lxml==6.0.1
+numpy==2.2.4
+openpyxl==3.1.5
+pycountry==24.6.1
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+regex==2025.7.34
+tornado==6.5.2
+typing-extensions==4.15.0
+
+# Security and database plugins
+pycryptodome==3.23.0
+rdflib==7.1.4
+
+# Other required dependencies
+graphviz==0.21
+pillow==11.3.0
+tinycss2==1.4.0
+
+# HTTP requests for fetching filings
+requests==2.32.5
+
+# AWS Lambda specific (if needed)
+# Note: boto3 is already available in Lambda runtime
