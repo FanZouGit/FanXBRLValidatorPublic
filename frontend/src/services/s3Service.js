@@ -55,7 +55,6 @@ async function invokeLambdaValidation(s3Key, useDqcRules) {
   try {
     // Construct the S3 URL for the uploaded file
     const bucketName = import.meta.env.VITE_S3_BUCKET_NAME
-    const region = import.meta.env.VITE_AWS_REGION
     const s3Url = `s3://${bucketName}/${s3Key}`
     
     // Call API Gateway endpoint that triggers Lambda

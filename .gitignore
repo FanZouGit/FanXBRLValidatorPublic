@@ -50,3 +50,9 @@ response.json
 *.zip
 load-test.yml
 test_lambda.sh
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/package-lock.json
