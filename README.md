@@ -1,8 +1,13 @@
 # XBRL Validator for EDGAR Filings
 
-A Python application to validate EDGAR XBRL and iXBRL filings using Arelle as the core validation engine with comprehensive rule sets.
+A comprehensive solution to validate EDGAR XBRL and iXBRL filings using Arelle as the core validation engine with comprehensive rule sets.
 
-**Now with AWS Lambda support!** Deploy as a serverless function for on-demand validation. See [AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md) for details.
+**Features:**
+- **React Web Frontend** - User-friendly interface for uploading and validating filings (deploy to AWS Amplify)
+- **AWS Lambda Backend** - Serverless validation function for on-demand processing
+- **Python CLI** - Command-line interface for local validation
+
+See [FRONTEND_DEPLOYMENT.md](FRONTEND_DEPLOYMENT.md) for frontend deployment and [AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md) for Lambda deployment.
 
 ## Overview
 
@@ -75,6 +80,15 @@ This validation application implements a comprehensive workflow for validating S
    ```
 
 ## Usage
+
+### Web Frontend (AWS Amplify)
+
+Upload and validate XBRL filings through a user-friendly web interface:
+
+1. **Deploy the frontend** to AWS Amplify (see [FRONTEND_DEPLOYMENT.md](FRONTEND_DEPLOYMENT.md))
+2. **Access the web application** at your Amplify URL
+3. **Upload XBRL files** via drag-and-drop or file selection
+4. **View validation results** in real-time with categorized messages
 
 ### Local Validation
 
