@@ -32,6 +32,9 @@ if arelle_path not in sys.path:
     sys.path.insert(0, arelle_path)
 
 from arelle import CntlrCmdLine
+from dynamodb_helper import save_to_dynamodb
+from sqs_helper import send_to_sqs
+from sns_helper import send_to_sns
 
 
 def validate_filing(filing_url, use_dqc_rules=True):
@@ -116,14 +119,103 @@ def lambda_handler(event, context):
         # Perform validation
         success, output, error = validate_filing(filing_url, use_dqc_rules)
         
+        # Determine status
+        validation_status = 'success' if success else 'error'
+        
+        # Save to DynamoDB (if table name is configured)
+        dynamodb_result = None
+        validation_timestamp = None
+        if os.environ.get('DYNAMODB_TABLE_NAME'):
+            print(f"Saving validation result to DynamoDB table: {os.environ.get('DYNAMODB_TABLE_NAME')}")
+            dynamodb_result = save_to_dynamodb(
+                filing_url=filing_url,
+                status=validation_status,
+                validation_output=output,
+                dqc_rules_enabled=use_dqc_rules,
+                validation_errors=error if error else None
+            )
+            
+            if dynamodb_result.get('success'):
+                validation_timestamp = dynamodb_result.get('timestamp')
+                print(f"Successfully saved to DynamoDB at timestamp: {validation_timestamp}")
+            else:
+                print(f"Failed to save to DynamoDB: {dynamodb_result.get('error')}")
+        else:
+            print("DYNAMODB_TABLE_NAME not set, skipping DynamoDB save")
+        
+        # Send to SQS for next stage processing (only for successful validations)
+        sqs_result = None
+        if validation_status == 'success' and os.environ.get('SQS_QUEUE_URL'):
+            print(f"Sending successful validation to SQS queue: {os.environ.get('SQS_QUEUE_URL')}")
+            sqs_result = send_to_sqs(
+                filing_url=filing_url,
+                validation_output=output,
+                dqc_rules_enabled=use_dqc_rules,
+                timestamp=validation_timestamp
+            )
+            
+            if sqs_result.get('success'):
+                print(f"Successfully sent to SQS with message ID: {sqs_result.get('message_id')}")
+            else:
+                print(f"Failed to send to SQS: {sqs_result.get('error')}")
+        elif validation_status == 'success':
+            print("SQS_QUEUE_URL not set, skipping SQS send")
+        else:
+            print(f"Validation status is '{validation_status}', skipping SQS send (only successful validations are sent)")
+        
+        # Send to SNS to notify filer (only for failed validations)
+        sns_result = None
+        if validation_status == 'error' and os.environ.get('SNS_TOPIC_ARN'):
+            print(f"Sending validation failure notification to SNS topic: {os.environ.get('SNS_TOPIC_ARN')}")
+            sns_result = send_to_sns(
+                filing_url=filing_url,
+                validation_output=output,
+                validation_errors=error,
+                dqc_rules_enabled=use_dqc_rules,
+                timestamp=validation_timestamp
+            )
+            
+            if sns_result.get('success'):
+                print(f"Successfully sent to SNS with message ID: {sns_result.get('message_id')}")
+            else:
+                print(f"Failed to send to SNS: {sns_result.get('error')}")
+        elif validation_status == 'error':
+            print("SNS_TOPIC_ARN not set, skipping SNS notification")
+        else:
+            print(f"Validation status is '{validation_status}', skipping SNS notification (only failed validations are notified)")
+        
         # Prepare response
         response_body = {
-            'status': 'success' if success else 'error',
+            'status': validation_status,
             'filing_url': filing_url,
             'dqc_rules_enabled': use_dqc_rules,
             'validation_output': output,
             'validation_errors': error if error else None
         }
+        
+        # Include DynamoDB save result if attempted
+        if dynamodb_result:
+            response_body['dynamodb_save'] = {
+                'success': dynamodb_result.get('success'),
+                'timestamp': dynamodb_result.get('timestamp') if dynamodb_result.get('success') else None,
+                'error': dynamodb_result.get('error') if not dynamodb_result.get('success') else None
+            }
+        
+        # Include SQS send result if attempted
+        if sqs_result:
+            response_body['sqs_send'] = {
+                'success': sqs_result.get('success'),
+                'message_id': sqs_result.get('message_id') if sqs_result.get('success') else None,
+                'error': sqs_result.get('error') if not sqs_result.get('success') else None
+            }
+        
+        # Include SNS send result if attempted
+        if sns_result:
+            response_body['sns_send'] = {
+                'success': sns_result.get('success'),
+                'message_id': sns_result.get('message_id') if sns_result.get('success') else None,
+                'error': sns_result.get('error') if not sns_result.get('success') else None
+            }
         
         return {
             'statusCode': 200 if success else 500,
