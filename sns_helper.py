@@ -109,10 +109,11 @@ Validation Output:
         
         try:
             # Send notification to SNS
+            # Use text message for better email/SMS readability, with JSON in structured format
             response = self.sns.publish(
                 TopicArn=self.topic_arn,
                 Subject=subject,
-                Message=json.dumps(message_body, indent=2),
+                Message=text_message,
                 MessageAttributes=msg_attributes
             )
             

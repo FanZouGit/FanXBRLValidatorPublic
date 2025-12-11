@@ -124,6 +124,7 @@ def lambda_handler(event, context):
         
         # Save to DynamoDB (if table name is configured)
         dynamodb_result = None
+        validation_timestamp = None
         if os.environ.get('DYNAMODB_TABLE_NAME'):
             print(f"Saving validation result to DynamoDB table: {os.environ.get('DYNAMODB_TABLE_NAME')}")
             dynamodb_result = save_to_dynamodb(
@@ -135,7 +136,8 @@ def lambda_handler(event, context):
             )
             
             if dynamodb_result.get('success'):
-                print(f"Successfully saved to DynamoDB at timestamp: {dynamodb_result.get('timestamp')}")
+                validation_timestamp = dynamodb_result.get('timestamp')
+                print(f"Successfully saved to DynamoDB at timestamp: {validation_timestamp}")
             else:
                 print(f"Failed to save to DynamoDB: {dynamodb_result.get('error')}")
         else:
@@ -149,7 +151,7 @@ def lambda_handler(event, context):
                 filing_url=filing_url,
                 validation_output=output,
                 dqc_rules_enabled=use_dqc_rules,
-                timestamp=dynamodb_result.get('timestamp') if dynamodb_result and dynamodb_result.get('success') else None
+                timestamp=validation_timestamp
             )
             
             if sqs_result.get('success'):
@@ -170,7 +172,7 @@ def lambda_handler(event, context):
                 validation_output=output,
                 validation_errors=error,
                 dqc_rules_enabled=use_dqc_rules,
-                timestamp=dynamodb_result.get('timestamp') if dynamodb_result and dynamodb_result.get('success') else None
+                timestamp=validation_timestamp
             )
             
             if sns_result.get('success'):
