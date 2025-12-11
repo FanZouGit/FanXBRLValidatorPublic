@@ -18,11 +18,19 @@ API Gateway / S3 Event / Direct Invoke
 AWS Lambda (Container)
     ├── lambda_handler.py (Entry point)
     ├── dynamodb_helper.py (DynamoDB integration)
+    ├── sqs_helper.py (SQS integration)
+    ├── sns_helper.py (SNS integration)
     ├── validate_filing.py (Validation logic)
     └── Arelle/ (XBRL engine + plugins)
     ↓
-DynamoDB Table (Optional)
-    └── Validation Results Storage
+    ├─→ DynamoDB Table (Optional)
+    │   └── Validation Results Storage
+    │
+    ├─→ SQS Queue (Optional)
+    │   └── Successful Validations for Next Stage Processing
+    │
+    └─→ SNS Topic (Optional)
+        └── Failed Validation Notifications to Filer
 ```
 
 ## Prerequisites
@@ -112,6 +120,8 @@ Important configuration settings:
 - **Environment variables** (optional):
   - `LOG_LEVEL`: `INFO` or `DEBUG`
   - `DYNAMODB_TABLE_NAME`: Name of DynamoDB table to store validation results (optional)
+  - `SQS_QUEUE_URL`: URL of SQS queue for successful validations (optional)
+  - `SNS_TOPIC_ARN`: ARN of SNS topic for failed validation notifications (optional)
 
 ```bash
 # Update Lambda configuration
@@ -188,6 +198,194 @@ aws lambda update-function-configuration \
 
 **Note**: If `DYNAMODB_TABLE_NAME` is not set, the Lambda will still work but won't save results to DynamoDB.
 
+### 8. (Optional) Setup SQS for Next Stage Processing
+
+The Lambda function can automatically send successful validation results to an SQS queue for downstream processing.
+
+#### Create SQS Queue
+
+```bash
+# Create SQS queue for successful validations
+aws sqs create-queue \
+    --queue-name xbrl-successful-validations \
+    --region us-east-1
+
+# Get the queue URL (save this for configuration)
+aws sqs get-queue-url \
+    --queue-name xbrl-successful-validations \
+    --region us-east-1
+```
+
+#### Update Lambda IAM Role
+
+Add SQS permissions to the Lambda execution role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:SendMessage",
+        "sqs:GetQueueUrl"
+      ],
+      "Resource": "arn:aws:sqs:us-east-1:<account-id>:xbrl-successful-validations"
+    }
+  ]
+}
+```
+
+Apply the policy:
+
+```bash
+# Create policy
+aws iam create-policy \
+    --policy-name xbrl-validator-sqs-policy \
+    --policy-document file://sqs-policy.json
+
+# Attach to Lambda role
+aws iam attach-role-policy \
+    --role-name <lambda-execution-role> \
+    --policy-arn arn:aws:iam::<account-id>:policy/xbrl-validator-sqs-policy
+```
+
+#### Configure Environment Variable
+
+```bash
+# Set SQS queue URL in Lambda environment
+aws lambda update-function-configuration \
+    --function-name xbrl-validator \
+    --environment Variables={SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/<account-id>/xbrl-successful-validations}
+```
+
+**Note**: 
+- If `SQS_QUEUE_URL` is not set, the Lambda will still work but won't send messages to SQS
+- Only filings that **pass validation** (status='success') are sent to SQS
+- Failed validations are NOT sent to SQS
+
+#### SQS Message Format
+
+Messages sent to SQS contain:
+
+```json
+{
+  "filing_url": "https://www.sec.gov/path/to/filing.htm",
+  "timestamp": "2024-12-11T18:30:45.123456+00:00",
+  "status": "success",
+  "dqc_rules_enabled": true,
+  "validation_output": "[info] validated in 2.34 secs"
+}
+```
+
+Message attributes for filtering:
+- `status`: "success"
+- `filing_url`: The filing URL
+- `dqc_enabled`: "true" or "false"
+
+### 9. (Optional) Setup SNS for Failed Validation Notifications
+
+The Lambda function can automatically send notifications via SNS when validation fails, allowing filers to be notified.
+
+#### Create SNS Topic
+
+```bash
+# Create SNS topic for failed validation notifications
+aws sns create-topic \
+    --name xbrl-validation-failures \
+    --region us-east-1
+
+# Get the topic ARN (save this for configuration)
+aws sns list-topics --region us-east-1 | grep xbrl-validation-failures
+```
+
+#### Subscribe Email/SMS to Topic
+
+```bash
+# Subscribe an email address to receive notifications
+aws sns subscribe \
+    --topic-arn arn:aws:sns:us-east-1:<account-id>:xbrl-validation-failures \
+    --protocol email \
+    --notification-endpoint filer@example.com
+
+# Or subscribe an SMS number
+aws sns subscribe \
+    --topic-arn arn:aws:sns:us-east-1:<account-id>:xbrl-validation-failures \
+    --protocol sms \
+    --notification-endpoint +1234567890
+```
+
+#### Update Lambda IAM Role
+
+Add SNS permissions to the Lambda execution role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sns:Publish"
+      ],
+      "Resource": "arn:aws:sns:us-east-1:<account-id>:xbrl-validation-failures"
+    }
+  ]
+}
+```
+
+Apply the policy:
+
+```bash
+# Create policy
+aws iam create-policy \
+    --policy-name xbrl-validator-sns-policy \
+    --policy-document file://sns-policy.json
+
+# Attach to Lambda role
+aws iam attach-role-policy \
+    --role-name <lambda-execution-role> \
+    --policy-arn arn:aws:iam::<account-id>:policy/xbrl-validator-sns-policy
+```
+
+#### Configure Environment Variable
+
+```bash
+# Set SNS topic ARN in Lambda environment
+aws lambda update-function-configuration \
+    --function-name xbrl-validator \
+    --environment Variables={SNS_TOPIC_ARN=arn:aws:sns:us-east-1:<account-id>:xbrl-validation-failures}
+```
+
+**Note**: 
+- If `SNS_TOPIC_ARN` is not set, the Lambda will still work but won't send notifications
+- Only filings that **fail validation** (status='error') trigger SNS notifications
+- Successful validations are NOT sent to SNS
+
+#### SNS Notification Format
+
+Notifications sent to SNS contain:
+
+**Subject**: `XBRL Validation Failure: [filing_url]`
+
+**Message Body**:
+```json
+{
+  "filing_url": "https://www.sec.gov/path/to/filing.htm",
+  "timestamp": "2024-12-11T18:30:45.123456+00:00",
+  "status": "error",
+  "dqc_rules_enabled": true,
+  "validation_output": "[error] Validation failed...",
+  "validation_errors": "Error details..."
+}
+```
+
+Message attributes for filtering:
+- `status`: "error"
+- `filing_url`: The filing URL
+- `dqc_enabled`: "true" or "false"
+
+
 ## Usage
 
 ### Invoke Lambda Function Directly
@@ -247,8 +445,19 @@ The `body` field contains a JSON string with:
   - `success`: Boolean indicating if save was successful
   - `timestamp`: ISO 8601 timestamp when saved (if successful)
   - `error`: Error message (if save failed)
+- `sqs_send`: (Optional) Result of sending to SQS (only for successful validations)
+  - `success`: Boolean indicating if send was successful
+  - `message_id`: SQS message ID (if successful)
+  - `error`: Error message (if send failed)
+- `sns_send`: (Optional) Result of sending to SNS (only for failed validations)
+  - `success`: Boolean indicating if send was successful
+  - `message_id`: SNS message ID (if successful)
+  - `error`: Error message (if send failed)
 
-**Note**: The `dynamodb_save` field only appears if `DYNAMODB_TABLE_NAME` environment variable is configured.
+**Notes**: 
+- The `dynamodb_save` field only appears if `DYNAMODB_TABLE_NAME` environment variable is configured
+- The `sqs_send` field only appears if `SQS_QUEUE_URL` is configured and validation succeeds
+- The `sns_send` field only appears if `SNS_TOPIC_ARN` is configured and validation fails
 
 ## Integration Options
 
