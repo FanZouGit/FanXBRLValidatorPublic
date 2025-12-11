@@ -30,5 +30,6 @@ tinycss2==1.4.0
 # HTTP requests for fetching filings
 requests==2.32.5
 
-# AWS Lambda specific (if needed)
-# Note: boto3 is already available in Lambda runtime
+# AWS SDK for DynamoDB integration
+# Note: boto3 is already available in Lambda runtime, but including for local testing
+boto3>=1.28.0

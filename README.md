@@ -5,9 +5,10 @@ A comprehensive solution to validate EDGAR XBRL and iXBRL filings using Arelle a
 **Features:**
 - **React Web Frontend** - User-friendly interface for uploading and validating filings (deploy to AWS Amplify)
 - **AWS Lambda Backend** - Serverless validation function for on-demand processing
+- **DynamoDB Integration** - Optional storage of validation results for historical tracking
 - **Python CLI** - Command-line interface for local validation
 
-See [FRONTEND_DEPLOYMENT.md](FRONTEND_DEPLOYMENT.md) for frontend deployment and [AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md) for Lambda deployment.
+See [FRONTEND_DEPLOYMENT.md](FRONTEND_DEPLOYMENT.md) for frontend deployment, [AWS_LAMBDA_DEPLOYMENT.md](AWS_LAMBDA_DEPLOYMENT.md) for Lambda deployment, and [DYNAMODB_SCHEMA.md](DYNAMODB_SCHEMA.md) for DynamoDB setup.
 
 ## Overview
 

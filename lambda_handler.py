@@ -32,6 +32,7 @@ if arelle_path not in sys.path:
     sys.path.insert(0, arelle_path)
 
 from arelle import CntlrCmdLine
+from dynamodb_helper import save_to_dynamodb
 
 
 def validate_filing(filing_url, use_dqc_rules=True):
@@ -116,14 +117,44 @@ def lambda_handler(event, context):
         # Perform validation
         success, output, error = validate_filing(filing_url, use_dqc_rules)
         
+        # Determine status
+        validation_status = 'success' if success else 'error'
+        
+        # Save to DynamoDB (if table name is configured)
+        dynamodb_result = None
+        if os.environ.get('DYNAMODB_TABLE_NAME'):
+            print(f"Saving validation result to DynamoDB table: {os.environ.get('DYNAMODB_TABLE_NAME')}")
+            dynamodb_result = save_to_dynamodb(
+                filing_url=filing_url,
+                status=validation_status,
+                validation_output=output,
+                dqc_rules_enabled=use_dqc_rules,
+                validation_errors=error if error else None
+            )
+            
+            if dynamodb_result.get('success'):
+                print(f"Successfully saved to DynamoDB at timestamp: {dynamodb_result.get('timestamp')}")
+            else:
+                print(f"Failed to save to DynamoDB: {dynamodb_result.get('error')}")
+        else:
+            print("DYNAMODB_TABLE_NAME not set, skipping DynamoDB save")
+        
         # Prepare response
         response_body = {
-            'status': 'success' if success else 'error',
+            'status': validation_status,
             'filing_url': filing_url,
             'dqc_rules_enabled': use_dqc_rules,
             'validation_output': output,
             'validation_errors': error if error else None
         }
+        
+        # Include DynamoDB save result if attempted
+        if dynamodb_result:
+            response_body['dynamodb_save'] = {
+                'success': dynamodb_result.get('success'),
+                'timestamp': dynamodb_result.get('timestamp') if dynamodb_result.get('success') else None,
+                'error': dynamodb_result.get('error') if not dynamodb_result.get('success') else None
+            }
         
         return {
             'statusCode': 200 if success else 500,

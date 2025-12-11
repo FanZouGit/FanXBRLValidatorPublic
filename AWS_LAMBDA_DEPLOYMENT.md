@@ -17,8 +17,12 @@ API Gateway / S3 Event / Direct Invoke
     ↓
 AWS Lambda (Container)
     ├── lambda_handler.py (Entry point)
+    ├── dynamodb_helper.py (DynamoDB integration)
     ├── validate_filing.py (Validation logic)
     └── Arelle/ (XBRL engine + plugins)
+    ↓
+DynamoDB Table (Optional)
+    └── Validation Results Storage
 ```
 
 ## Prerequisites
@@ -107,6 +111,7 @@ Important configuration settings:
 - **Ephemeral storage**: 1024 MB or higher for temporary files
 - **Environment variables** (optional):
   - `LOG_LEVEL`: `INFO` or `DEBUG`
+  - `DYNAMODB_TABLE_NAME`: Name of DynamoDB table to store validation results (optional)
 
 ```bash
 # Update Lambda configuration
@@ -116,6 +121,72 @@ aws lambda update-function-configuration \
     --timeout 300 \
     --ephemeral-storage Size=1024
 ```
+
+### 7. (Optional) Setup DynamoDB for Validation Results
+
+The Lambda function can automatically save validation results to DynamoDB for historical tracking and analysis.
+
+#### Create DynamoDB Table
+
+```bash
+# Create DynamoDB table for validation results
+aws dynamodb create-table \
+    --table-name xbrl-validation-results \
+    --attribute-definitions \
+        AttributeName=filing_url,AttributeType=S \
+        AttributeName=timestamp,AttributeType=S \
+    --key-schema \
+        AttributeName=filing_url,KeyType=HASH \
+        AttributeName=timestamp,KeyType=RANGE \
+    --billing-mode PAY_PER_REQUEST \
+    --region us-east-1
+```
+
+#### Update Lambda IAM Role
+
+Add DynamoDB permissions to the Lambda execution role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:<account-id>:table/xbrl-validation-results"
+    }
+  ]
+}
+```
+
+Apply the policy:
+
+```bash
+# Create policy
+aws iam create-policy \
+    --policy-name xbrl-validator-dynamodb-policy \
+    --policy-document file://dynamodb-policy.json
+
+# Attach to Lambda role
+aws iam attach-role-policy \
+    --role-name <lambda-execution-role> \
+    --policy-arn arn:aws:iam::<account-id>:policy/xbrl-validator-dynamodb-policy
+```
+
+#### Configure Environment Variable
+
+```bash
+# Set DynamoDB table name in Lambda environment
+aws lambda update-function-configuration \
+    --function-name xbrl-validator \
+    --environment Variables={DYNAMODB_TABLE_NAME=xbrl-validation-results}
+```
+
+**Note**: If `DYNAMODB_TABLE_NAME` is not set, the Lambda will still work but won't save results to DynamoDB.
 
 ## Usage
 
@@ -162,7 +233,7 @@ cat response.json | jq .
   "headers": {
     "Content-Type": "application/json"
   },
-  "body": "{\"status\":\"success\",\"filing_url\":\"...\",\"validation_output\":\"...\"}"
+  "body": "{\"status\":\"success\",\"filing_url\":\"...\",\"validation_output\":\"...\",\"dynamodb_save\":{...}}"
 }
 ```
 
@@ -172,6 +243,12 @@ The `body` field contains a JSON string with:
 - `dqc_rules_enabled`: Whether DQC rules were used
 - `validation_output`: Validation messages and results
 - `validation_errors`: Any errors encountered (if applicable)
+- `dynamodb_save`: (Optional) Result of saving to DynamoDB
+  - `success`: Boolean indicating if save was successful
+  - `timestamp`: ISO 8601 timestamp when saved (if successful)
+  - `error`: Error message (if save failed)
+
+**Note**: The `dynamodb_save` field only appears if `DYNAMODB_TABLE_NAME` environment variable is configured.
 
 ## Integration Options
 
