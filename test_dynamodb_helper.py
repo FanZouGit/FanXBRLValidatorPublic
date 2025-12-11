@@ -122,15 +122,14 @@ if __name__ == "__main__":
     print("Running DynamoDB Helper Tests")
     print("=" * 50)
     
-    all_passed = True
-    
-    # Run tests
-    all_passed &= test_dynamodb_helper_init()
-    all_passed &= test_save_to_dynamodb_structure()
-    all_passed &= test_item_structure()
+    # Run tests and collect results
+    results = []
+    results.append(test_dynamodb_helper_init())
+    results.append(test_save_to_dynamodb_structure())
+    results.append(test_item_structure())
     
     print("\n" + "=" * 50)
-    if all_passed:
+    if all(results):
         print("✓ All tests passed!")
         sys.exit(0)
     else:

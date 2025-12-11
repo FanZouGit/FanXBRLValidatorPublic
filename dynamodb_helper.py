@@ -9,6 +9,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 
@@ -130,10 +131,7 @@ class DynamoDBHelper:
             else:
                 # Query for the filing_url and get the most recent
                 response = self.table.query(
-                    KeyConditionExpression='filing_url = :url',
-                    ExpressionAttributeValues={
-                        ':url': filing_url
-                    },
+                    KeyConditionExpression=Key('filing_url').eq(filing_url),
                     ScanIndexForward=False,  # Descending order (newest first)
                     Limit=1
                 )
